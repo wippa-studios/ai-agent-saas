@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise AI Agent Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css"></script>
+<style>
+  body { font-family: 'Pyidaungsu','Padauk',sans-serif; }
+  .bar { transition: width .6s ease; }
+</style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+
+<!-- =========================================================
+     CONFIG: Backend API base URL
+========================================================= -->
+<script>const API_BASE = "http://127.0.0.1:8000";</script>
+
+<!-- ===================== ONBOARDING WIZARD ===================== -->
+<div id="onboarding" class="max-w-md mx-auto mt-16 bg-slate-800 border border-slate-700 rounded-2xl p-8 space-y-5">
+  <div>
+    <h1 class="text-2xl font-bold text-indigo-400">🏢 Company Onboarding</h1>
+    <p class="text-slate-400 text-sm mt-1">စတင်အသုံးပြုရန် ကုမ္ပဏီအချက်အလက် အနည်းငယ် ဖြည့်ပါ</p>
+  </div>
+  <div id="wizardStep1" class="space-y-3">
+    <input id="companyName" placeholder="ကုမ္ပဏီ / ဆိုင် အမည် (ဥပမာ - Fresh Fruits Yangon)"
+      class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
+    <input id="adminEmail" placeholder="Email" type="email"
+      class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
+    <button onclick="registerTenant()" class="w-full bg-indigo-600 hover:bg-indigo-500 rounded-lg py-3 font-medium">
+      Get Started →
+    </button>
+    <p class="text-xs text-slate-500">အကောင့် ရှိပြီးသားဆိုပါက Tenant ID ကို တိုက်ရိုက် ထည့်ပါ:</p>
+    <div class="flex gap-2">
+      <input id="existingTenantId" placeholder="Existing Tenant ID"
+        class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs">
+      <button onclick="loginWithTenantId()" class="bg-slate-700 hover:bg-slate-600 px-4 rounded-lg text-xs">Login</button>
+    </div>
+  </div>
+  <p id="onboardError" class="text-rose-400 text-xs hidden"></p>
+</div>
+
+<!-- ===================== MAIN DASHBOARD ===================== -->
+<div id="dashboard" class="hidden max-w-4xl mx-auto p-6 space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+    <div>
+      <h1 class="text-2xl font-bold text-indigo-400">All-in-One AI Enterprise Agent</h1>
+      <p id="tenantLabel" class="text-slate-400 text-sm"></p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="planBadge" class="text-xs bg-indigo-900 text-indigo-300 px-3 py-1 rounded-full"></span>
+      <button onclick="logout()" class="text-xs text-slate-400 hover:text-white">Logout</button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-3 gap-4">
+    <div class="bg-emerald-950 border border-emerald-800 p-4 rounded-lg">
+      <p class="text-xs text-emerald-400">စုစုပေါင်း ဝင်ငွေ</p>
+      <p id="sumIncome" class="text-xl font-bold text-emerald-200">0 ကျပ်</p>
+    </div>
+    <div class="bg-rose-950 border border-rose-800 p-4 rounded-lg">
+      <p class="text-xs text-rose-400">စုစုပေါင်း ထွက်ငွေ</p>
+      <p id="sumExpense" class="text-xl font-bold text-rose-200">0 ကျပ်</p>
+    </div>
+    <div class="bg-indigo-950 border border-indigo-800 p-4 rounded-lg">
+      <p class="text-xs text-indigo-400">အသားတင် အမြတ်</p>
+      <p id="sumProfit" class="text-xl font-bold text-indigo-200">0 ကျပ်</p>
+    </div>
+  </div>
+  <!-- Simple bar visualization -->
+  <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 space-y-2">
+    <div class="flex justify-between text-xs text-slate-400"><span>ဝင်ငွေ</span><span id="barIncomeLabel"></span></div>
+    <div class="w-full bg-slate-900 rounded h-3"><div id="barIncome" class="bar bg-emerald-500 h-3 rounded" style="width:0%"></div></div>
+    <div class="flex justify-between text-xs text-slate-400"><span>ထွက်ငွေ</span><span id="barExpenseLabel"></span></div>
+    <div class="w-full bg-slate-900 rounded h-3"><div id="barExpense" class="bar bg-rose-500 h-3 rounded" style="width:0%"></div></div>
+  </div>
+
+  <!-- Chat-first Input -->
+  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+    <label class="block text-sm font-medium text-slate-300">AI Agent ကို ခိုင်းစေလိုသော စာသား ရိုက်ထည့်ပါ:</label>
+    <textarea id="userInput" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500"
+      placeholder="ဥပမာ - ဒီနေ့ ကော်ဖီဖိုး ၅၀၀၀ ကျပ်၊ ရောင်းရငွေ ၁၂၀၀၀၀ ကျပ် ရတယ်..."></textarea>
+    <div class="flex flex-wrap justify-between items-center gap-2">
+      <div class="flex flex-wrap gap-2">
+        <button onclick="setPrompt('ဒီနေ့ မနက်စာ ၅၀၀၀ ကျပ်၊ ရောင်းရငွေ ၁၂၀၀၀၀ ကျပ်၊ ပစ္စည်းဖိုး ၄၀၀၀၀ ကျပ် ကုန်တယ်')"
+          class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-full">📊 Finance Sample</button>
+        <button onclick="setPrompt('သစ်သီးဆိုင်အတွက် Durian Special Discount Facebook Post ရေးပေးပါ')"
+          class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-full">📢 Marketing Sample</button>
+      </div>
+      <button onclick="submitToAgent()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-2 rounded-lg font-medium">Run AI Agent</button>
+    </div>
+  </div>
+
+  <!-- Output Panel -->
+  <div id="outputArea" class="hidden bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+      <span id="agentBadge" class="px-3 py-1 bg-indigo-900 text-indigo-300 rounded-full text-xs font-semibold"></span>
+      <span id="reasoningText" class="text-xs text-slate-400"></span>
+    </div>
+    <div id="dynamicContent" class="pt-2"></div>
+  </div>
+
+  <!-- Billing -->
+  <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+    <h3 class="text-sm font-semibold text-slate-300 mb-3">💳 Subscription / Billing (Optional)</h3>
+    <div class="flex gap-3">
+      <button onclick="checkout('STARTER')" class="text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">Upgrade → Starter</button>
+      <button onclick="checkout('PRO')" class="text-xs bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg">Upgrade → Pro</button>
+    </div>
+    <p id="billingNote" class="text-xs text-slate-500 mt-2"></p>
+  </div>
+</div>
+
+<script>
+let TENANT_ID = localStorage.getItem('tenant_id');
+
+window.onload = () => { if (TENANT_ID) enterDashboard(); };
+
+function setPrompt(t) { document.getElementById('userInput').value = t; }
+
+async function registerTenant() {
+  const company_name = document.getElementById('companyName').value.trim();
+  const admin_email = document.getElementById('adminEmail').value.trim();
+  const errEl = document.getElementById('onboardError');
+  errEl.classList.add('hidden');
+  if (!company_name || !admin_email) { showErr('ကျေးဇူးပြု၍ အချက်အလက် အပြည့်အစုံ ဖြည့်ပါ'); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/saas/register-tenant`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({company_name, admin_email, plan_tier: 'FREE'})
+    });
+    const data = await res.json();
+    if (!res.ok) { showErr(data.detail || 'Registration failed'); return; }
+    TENANT_ID = data.id;
+    localStorage.setItem('tenant_id', TENANT_ID);
+    enterDashboard();
+  } catch (e) {
+    showErr('Backend Server (http://127.0.0.1:8000) သို့ ချိတ်ဆက်၍ မရပါ။ uvicorn ကို run ထားပြီးမှု စစ်ဆေးပါ။');
+  }
+}
+
+function loginWithTenantId() {
+  const id = document.getElementById('existingTenantId').value.trim();
+  if (!id) return;
+  TENANT_ID = id;
+  localStorage.setItem('tenant_id', id);
+  enterDashboard();
+}
+
+function showErr(msg) {
+  const el = document.getElementById('onboardError');
+  el.innerText = msg; el.classList.remove('hidden');
+}
+
+function logout() {
+  localStorage.removeItem('tenant_id');
+  location.reload();
+}
+
+async function enterDashboard() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/saas/me`, { headers: { 'X-Tenant-ID': TENANT_ID } });
+    if (!res.ok) throw new Error('invalid tenant');
+    const tenant = await res.json();
+    document.getElementById('onboarding').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('tenantLabel').innerText = `${tenant.company_name} • ${tenant.admin_email}`;
+    document.getElementById('planBadge').innerText = `${tenant.plan_tier} PLAN`;
+    document.getElementById('billingNote').innerText = `Status: ${tenant.subscription_status}`;
+    loadFinanceSummary();
+  } catch (e) {
+    logout();
+  }
+}
+
+async function loadFinanceSummary() {
+  const res = await fetch(`${API_BASE}/api/v1/finance/my-records`, { headers: { 'X-Tenant-ID': TENANT_ID } });
+  if (!res.ok) return;
+  const d = await res.json();
+  document.getElementById('sumIncome').innerText = `${d.total_income.toLocaleString()} ကျပ်`;
+  document.getElementById('sumExpense').innerText = `${d.total_expense.toLocaleString()} ကျပ်`;
+  document.getElementById('sumProfit').innerText = `${d.net_profit.toLocaleString()} ကျပ်`;
+  const maxVal = Math.max(d.total_income, d.total_expense, 1);
+  document.getElementById('barIncome').style.width = `${(d.total_income / maxVal) * 100}%`;
+  document.getElementById('barExpense').style.width = `${(d.total_expense / maxVal) * 100}%`;
+  document.getElementById('barIncomeLabel').innerText = d.total_income.toLocaleString();
+  document.getElementById('barExpenseLabel').innerText = d.total_expense.toLocaleString();
+}
+
+async function submitToAgent() {
+  const userInput = document.getElementById('userInput').value.trim();
+  if (!userInput) return alert('ကျေးဇူးပြု၍ စာသား ရိုက်ထည့်ပါ');
+
+  const outputArea = document.getElementById('outputArea');
+  const dynamicContent = document.getElementById('dynamicContent');
+  outputArea.classList.remove('hidden');
+  dynamicContent.innerHTML = `<p class="text-indigo-400 animate-pulse">AI Agent စိစစ်တွက်ချက်နေပါသည်...</p>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/agent/process`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Tenant-ID': TENANT_ID},
+      body: JSON.stringify({ user_input: userInput })
+    });
+    const result = await res.json();
+    if (!res.ok) { dynamicContent.innerHTML = `<p class="text-red-400">${result.detail}</p>`; return; }
+
+    document.getElementById('agentBadge').innerText = result.agent_used;
+    document.getElementById('reasoningText').innerText = result.reasoning;
+
+    if (result.agent_used === 'FINANCE_AGENT') { renderFinanceUI(result.data); loadFinanceSummary(); }
+    else if (result.agent_used === 'MARKETING_AGENT') renderMarketingUI(result.data);
+    else dynamicContent.innerHTML = `<div class="p-4 bg-slate-900 rounded-lg text-slate-200 text-sm">${result.data.reply}</div>`;
+
+  } catch (err) {
+    dynamicContent.innerHTML = `<p class="text-red-400">Error: Backend Server သို့ ချိတ်ဆက်၍ မရပါ။</p>`;
+  }
+}
+
+function renderFinanceUI(data) {
+  let rows = data.items.map(i => `
+    <tr class="border-b border-slate-800">
+      <td class="py-1 text-xs ${i.type === 'INCOME' ? 'text-emerald-400' : 'text-rose-400'}">${i.type}</td>
+      <td class="py-1 text-xs text-slate-300">${i.category}</td>
+      <td class="py-1 text-xs text-slate-300">${i.amount.toLocaleString()}</td>
+      <td class="py-1 text-xs text-slate-500">${i.description}</td>
+    </tr>`).join('');
+  document.getElementById('dynamicContent').innerHTML = `
+    <table class="w-full mb-4">${rows || '<tr><td class="text-xs text-slate-500">စာရင်း မတွေ့ပါ</td></tr>'}</table>
+    <div class="bg-slate-900 p-4 rounded-lg">
+      <p class="text-xs text-slate-400 mb-1">CFO Insight:</p>
+      <p class="text-sm text-slate-200">${data.financial_advice}</p>
+    </div>`;
+}
+
+function renderMarketingUI(data) {
+  document.getElementById('dynamicContent').innerHTML = `
+    <div class="space-y-3">
+      <p class="text-xs text-slate-400">Target Audience: <span class="text-slate-200">${data.target_audience}</span></p>
+      <div class="bg-slate-900 p-4 rounded-lg border border-slate-700">
+        <p class="font-bold text-indigo-400 mb-2">${data.content_headline}</p>
+        <p class="text-sm text-slate-200 whitespace-pre-line mb-3">${data.facebook_post_caption}</p>
+        <p class="text-xs text-indigo-400">${data.suggested_hashtags.join(' ')}</p>
+      </div>
+      <div class="flex items-center justify-between bg-amber-950 border border-amber-800 p-3 rounded-lg text-amber-200 text-xs">
+        <span>⚠️ Human Approval လိုအပ်သည်</span>
+        <button onclick="approveMarketing('${data.log_id}')" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1 rounded">Approve & Publish</button>
+      </div>
+    </div>`;
+}
+
+async function approveMarketing(logId) {
+  const res = await fetch(`${API_BASE}/api/v1/marketing/${logId}/approve`, {
+    method: 'POST', headers: { 'X-Tenant-ID': TENANT_ID }
+  });
+  const d = await res.json();
+  alert(d.message || 'Approved');
+}
+
+async function checkout(plan) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/billing/create-checkout-session`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Tenant-ID': TENANT_ID},
+      body: JSON.stringify({plan_tier: plan})
+    });
+    const d = await res.json();
+    if (!res.ok) { alert(d.detail); return; }
+    window.location.href = d.checkout_url;
+  } catch (e) {
+    alert('Billing service unreachable');
+  }
+}
+</script>
+</body>
+</html>
