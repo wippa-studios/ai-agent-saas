@@ -1,0 +1,14 @@
+{
+  "name": "Gmail AI Automation - Error Handler",
+  "nodes": [
+    {"parameters": {}, "id": "error-trigger-1", "name": "Error Trigger", "type": "n8n-nodes-base.errorTrigger", "typeVersion": 1, "position": [-520, 0]},
+    {"parameters": {"jsCode": "const e=$json.execution||{}; const w=$json.workflow||{}; return [{json:{workflowName:w.name||'Unknown workflow',executionId:e.id||'',executionUrl:e.url||'',lastNode:e.lastNodeExecuted||'',errorMessage:e.error?.message||'Unknown error',mode:e.mode||'',receivedAt:new Date().toISOString()}}];"}, "id": "error-code-1", "name": "Build Safe Error Summary", "type": "n8n-nodes-base.code", "typeVersion": 2, "position": [-260, 0]},
+    {"parameters": {"fromEmail": "REPLACE_ALERT_FROM_EMAIL", "toEmail": "REPLACE_ALERT_TO_EMAIL", "subject": "n8n Gmail AI automation error: ={{ $json.lastNode }}", "emailType": "text", "message": "Workflow: ={{ $json.workflowName }}\nExecution: ={{ $json.executionUrl }}\nLast node: ={{ $json.lastNode }}\nError: ={{ $json.errorMessage }}\n\nDo not include or forward the email body in this alert."}, "id": "error-email-1", "name": "Send Error Alert", "type": "n8n-nodes-base.emailSend", "typeVersion": 2.1, "position": [20, 0], "credentials": {"smtp": {"id": "REPLACE_SMTP_CREDENTIAL_ID", "name": "REPLACE_SMTP_CREDENTIAL_NAME"}}}
+  ],
+  "connections": {"Error Trigger": {"main": [[{"node": "Build Safe Error Summary", "type": "main", "index": 0}]]}, "Build Safe Error Summary": {"main": [[{"node": "Send Error Alert", "type": "main", "index": 0}]]}},
+  "active": false,
+  "settings": {"executionOrder": "v1", "saveDataErrorExecution": "all", "saveDataSuccessExecution": "none", "saveManualExecutions": true},
+  "versionId": "REPLACE_ON_IMPORT",
+  "meta": {"templateCredsSetupCompleted": false},
+  "tags": []
+}

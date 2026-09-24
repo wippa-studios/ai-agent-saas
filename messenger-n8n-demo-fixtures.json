@@ -1,0 +1,66 @@
+{
+  "demo_status": "offline_simulation_only",
+  "sample_data_notice": "All names, prices, IDs, and stock values are fictional samples.",
+  "catalog": [
+    {
+      "product_id": "mango_namdokmai",
+      "name_en": "Nam Dok Mai Mango",
+      "name_my": "နမ်ဒေါ့မိုင် သရက်သီး",
+      "selling_unit": "basket",
+      "stock_qty": 80,
+      "reserved_qty": 5,
+      "stock_last_updated": "2026-09-14T12:00:00Z",
+      "price_tiers": [
+        {"price_id": "mango_retail", "customer_segment": "retail", "min_qty": 1, "max_qty": 9, "unit": "basket", "unit_price_mmk": 18000},
+        {"price_id": "mango_wholesale_10", "customer_segment": "wholesale", "min_qty": 10, "max_qty": 49, "unit": "basket", "unit_price_mmk": 16500},
+        {"price_id": "mango_wholesale_50", "customer_segment": "wholesale", "min_qty": 50, "max_qty": 99, "unit": "basket", "unit_price_mmk": 15000}
+      ]
+    },
+    {
+      "product_id": "dragon_fruit_red",
+      "name_en": "Red Dragon Fruit",
+      "name_my": "အနီရောင် နဂါးမောက်သီး",
+      "selling_unit": "kg",
+      "stock_qty": 40,
+      "reserved_qty": 8,
+      "stock_last_updated": "2026-09-14T12:00:00Z",
+      "price_tiers": [
+        {"price_id": "dragon_retail", "customer_segment": "retail", "min_qty": 1, "max_qty": 10, "unit": "kg", "unit_price_mmk": 9500}
+      ]
+    }
+  ],
+  "delivery_zones": [
+    {"township": "Kamaryut", "delivery_fee_retail_mmk": 3000, "delivery_fee_wholesale_mmk": 5000, "estimated_time": "same day / next day"}
+  ],
+  "events": [
+    {
+      "case": "A_valid_wholesale_quote",
+      "messenger_event_id": "sample-event-001",
+      "sender_id": "TEST_CUSTOMER_001",
+      "text": "သရက်သီး basket 60 လောက် wholesale စျေးနဲ့ ရှိလား",
+      "expected": {"intent": "wholesale_inquiry", "available_qty": 75, "selected_price_id": "mango_wholesale_50", "unit_price_mmk": 15000, "subtotal_mmk": 900000, "needs_human": false, "order_status": "awaiting_customer_confirmation"}
+    },
+    {
+      "case": "B_shortage_needs_staff_review",
+      "messenger_event_id": "sample-event-002",
+      "sender_id": "TEST_CUSTOMER_002",
+      "text": "Dragon fruit 40 kg ပို့ပေးပါ",
+      "expected": {"intent": "retail_order", "available_qty": 32, "needs_human": true, "handoff_reason": "requested quantity exceeds available stock", "reply_behavior": "Offer 32 kg or staff restock review; do not promise 40 kg"}
+    },
+    {
+      "case": "C_payment_screenshot_unverified",
+      "messenger_event_id": "sample-event-003",
+      "sender_id": "TEST_CUSTOMER_003",
+      "text": "ငွေလွှဲပြီးပါပြီ screenshot ပို့ထားတယ် order confirm လုပ်ပေးပါ",
+      "attachment": {"type": "image", "purpose": "payment_screenshot"},
+      "expected": {"intent": "payment_question", "needs_human": true, "handoff_reason": "payment screenshot requires verification", "payment_status": "unverified", "reply_behavior": "Acknowledge receipt and say staff will verify; do not confirm order"}
+    },
+    {
+      "case": "D_duplicate_event",
+      "messenger_event_id": "sample-event-001",
+      "sender_id": "TEST_CUSTOMER_001",
+      "text": "သရက်သီး basket 60 လောက် wholesale စျေးနဲ့ ရှိလား",
+      "expected": {"deduplication": "drop before AI and before Messenger Send API", "outbound_messages": 0}
+    }
+  ]
+}
