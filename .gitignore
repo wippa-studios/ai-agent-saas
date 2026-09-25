@@ -1,0 +1,14 @@
+# Real API keys — never commit
+.env
+
+# Local SQLite database created by database.py at runtime
+agent_saas.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
